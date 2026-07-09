@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>SOL — Sơ đồ liên kết phòng ban (3D)</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#0a0c10; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; overflow:hidden; }
+  #graph { width:100vw; height:100vh; }
+  .panel {
+    position:absolute; top:16px; right:16px; width:340px; max-height:80vh; overflow:auto;
+    background:#161a22; color:#e5e7eb; border:1px solid #2a3040; border-radius:12px; padding:16px;
+    box-shadow:0 8px 24px rgba(0,0,0,.5); font-size:14px; z-index:10; display:none;
+  }
+  .panel h3 { margin:0 0 8px 0; font-size:15px; color:#93c5fd; }
+  .panel ul { margin:8px 0 0 0; padding-left:18px; }
+  .panel li { margin-bottom:6px; line-height:1.4; }
+  .panel .freq { color:#9ca3af; font-size:12px; margin-top:10px; }
+  .hint {
+    position:absolute; top:16px; left:16px; background:#161a22; color:#9ca3af; border:1px solid #2a3040;
+    border-radius:10px; padding:10px 14px; font-size:13px; max-width:320px; z-index:10; line-height:1.5;
+  }
+  .legend-core { color:#93c5fd; font-weight:600; }
+  .legend-ext { color:#cbd5e1; }
+  .layout-bar {
+    position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+    background:#161a22; border:1px solid #2a3040; border-radius:10px; padding:8px; z-index:10;
+    display:flex; gap:6px;
+  }
+  .layout-bar button {
+    background:#1f2430; color:#cbd5e1; border:1px solid #3a4152; border-radius:6px;
+    padding:6px 12px; font-size:12px; cursor:pointer;
+  }
+  .layout-bar button.active { background:#2563eb; color:#fff; border-color:#93c5fd; }
+</style>
+</head>
+<body>
+<div id="graph"></div>
+<div class="hint">
+  <div><span class="legend-core">● Xanh</span> = phòng đã khảo sát (CK, Đào tạo, Kế toán, QA/QC, Thu mua)</div>
+  <div style="margin-top:4px"><span class="legend-ext">● Xám</span> = phòng ban liên quan (chưa có file riêng)</div>
+  <div style="margin-top:8px">🖱️ Kéo chuột để xoay góc nhìn 3D · Cuộn để zoom · Kéo node để di chuyển</div>
+  <div style="margin-top:6px">👉 Bấm vào 1 đường link để xem nghiệp vụ liên kết</div>
+</div>
+<div id="panel" class="panel">
+  <h3 id="panel-title"></h3>
+  <ul id="panel-list"></ul>
+  <div class="freq" id="panel-freq"></div>
+</div>
+<div class="layout-bar" id="layout-bar">
+  <button data-layout="force" class="active">Force (mặc định)</button>
+  <button data-layout="circle">Vòng tròn</button>
+  <button data-layout="sphere">Hình cầu</button>
+  <button data-layout="cube">Lưới lập phương</button>
+</div>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
+<script src="https://unpkg.com/three-spritetext@1.8.2/dist/three-spritetext.min.js"></script>
+<script src="./data.js"></script>
+<script>
+// ---- Dữ liệu nạp từ data.js (window.SOL_NETWORK_DATA) — muốn cập nhật nội dung thì sửa file data.js, không sửa ở đây ----
+const { CORE_IDS, nodeMeta, edgeDefs, internalNV } = window.SOL_NETWORK_DATA;
+const CORE = new Set(CORE_IDS);
+
+// ---- Đếm SL nghiệp vụ mỗi node: nội bộ (nếu có) + liên phòng ban (từ các cạnh nối tới node) ----
+function countLinkedProcesses(id) {
+  return edgeDefs
+    .filter((e) => e.a === id || e.b === id)
+    .reduce((sum, e) => sum + e.processes.length, 0);
+}
+
+const nvCount = {};
+Object.keys(nodeMeta).forEach((id) => {
+  const internalCount = (internalNV[id] || []).length;
+  const linkedCount = countLinkedProcesses(id);
+  nvCount[id] = { internalCount, linkedCount, total: internalCount + linkedCount };
+});
+
+const gData = {
+  nodes: Object.entries(nodeMeta).map(([id, meta]) => ({
+    id, name: meta.label, core: CORE.has(id), nv: nvCount[id],
+  })),
+  links: edgeDefs.map((e) => ({
+    source: e.a, target: e.b, processes: e.processes, freq: e.freq,
+    weight: e.processes.length,
+  })),
+};
+
+const panel = document.getElementById("panel");
+const panelTitle = document.getElementById("panel-title");
+const panelList = document.getElementById("panel-list");
+const panelFreq = document.getElementById("panel-freq");
+
+function showLinkPanel(link) {
+  const aLabel = nodeMeta[link.source.id || link.source]?.label || link.source;
+  const bLabel = nodeMeta[link.target.id || link.target]?.label || link.target;
+  panelTitle.textContent = `${aLabel}  ↔  ${bLabel}  (${link.processes.length} nghiệp vụ)`;
+  panelList.innerHTML = link.processes.map((p) => `<li>${p}</li>`).join("");
+  panelFreq.textContent = `Tần suất: ${link.freq}`;
+  panel.style.display = "block";
+}
+
+function showNodePanel(node) {
+  const label = nodeMeta[node.id]?.label || node.id;
+  const nv = nvCount[node.id] || { internalCount: 0, linkedCount: 0, total: 0 };
+  panelTitle.textContent = `${label}  —  ${nv.total} nghiệp vụ`;
+
+  const items = [];
+
+  // Nghiệp vụ nội bộ (chỉ có nếu là 1 trong 5 phòng đã khảo sát)
+  const internal = internalNV[node.id];
+  if (internal && internal.length) {
+    items.push(`<li style="color:#93c5fd;font-weight:600;list-style:none;margin-left:-18px">Nghiệp vụ nội bộ (${nv.internalCount})</li>`);
+    internal.forEach((p) => items.push(`<li>${p}</li>`));
+  }
+
+  // Nghiệp vụ liên phòng ban — gom theo phòng đối tác
+  const related = gData.links.filter((l) => {
+    const s = l.source.id || l.source;
+    const t = l.target.id || l.target;
+    return s === node.id || t === node.id;
+  });
+
+  if (related.length) {
+    items.push(`<li style="color:#93c5fd;font-weight:600;list-style:none;margin-left:-18px;margin-top:10px">Nghiệp vụ liên phòng ban (${nv.linkedCount})</li>`);
+    related.forEach((l) => {
+      const s = l.source.id || l.source;
+      const t = l.target.id || l.target;
+      const otherId = s === node.id ? t : s;
+      const otherLabel = nodeMeta[otherId]?.label || otherId;
+      l.processes.forEach((p) => {
+        items.push(`<li>${p} <span style="color:#9ca3af">— với ${otherLabel}</span></li>`);
+      });
+    });
+  }
+
+  if (!items.length) {
+    items.push(`<li style="list-style:none;margin-left:-18px;color:#9ca3af">Chưa có dữ liệu khảo sát riêng cho phòng này.</li>`);
+  }
+
+  panelList.innerHTML = items.join("");
+  panelFreq.textContent = "";
+  panel.style.display = "block";
+}
+
+const Graph = ForceGraph3D()(document.getElementById("graph"))
+  .graphData(gData)
+  .backgroundColor("#0a0c10")
+  .nodeLabel((n) => n.name)
+  .nodeColor((n) => (n.core ? "#2563eb" : "#4b5568"))
+  .nodeVal((n) => (n.core ? 10 : 5))
+  .nodeOpacity(0.95)
+  .linkWidth((l) => 0.6 + l.weight * 0.5)
+  .linkColor(() => "#64748b")
+  .linkOpacity(0.5)
+  .linkDirectionalArrowLength(4)
+  .linkDirectionalArrowRelPos(1)
+  .linkDirectionalParticles((l) => (l.__active ? 3 : 0))
+  .linkDirectionalParticleWidth(2.5)
+  .nodeThreeObject((n) => {
+    try {
+      const label = `${n.name}\n(${n.nv ? n.nv.total : 0})`;
+      const sprite = new SpriteText(label);
+      sprite.color = n.core ? "#dbeafe" : "#cbd5e1";
+      sprite.textHeight = n.core ? 5 : 3.6;
+      sprite.backgroundColor = n.core ? "rgba(37,99,235,0.85)" : "rgba(31,36,48,0.85)";
+      sprite.padding = 2;
+      sprite.borderRadius = 3;
+      sprite.position.set(0, n.core ? 12 : 8, 0);
+      return sprite;
+    } catch (err) {
+      console.error("SpriteText lỗi, bỏ qua label cho node", n.id, err);
+      return new THREE.Object3D(); // fallback rỗng, không crash scene
+    }
+  })
+  .nodeThreeObjectExtend(true)
+  .onLinkClick((link) => {
+    gData.links.forEach((l) => (l.__active = false));
+    link.__active = true;
+    Graph.linkDirectionalParticles((l) => (l.__active ? 3 : 0));
+    showLinkPanel(link);
+  })
+  .onNodeClick((node) => {
+    gData.links.forEach((l) => (l.__active = false));
+    Graph.linkDirectionalParticles((l) => (l.__active ? 3 : 0));
+    showNodePanel(node);
+  })
+  .onBackgroundClick(() => {
+    panel.style.display = "none";
+    gData.links.forEach((l) => (l.__active = false));
+    Graph.linkDirectionalParticles((l) => (l.__active ? 3 : 0));
+  })
+  .onNodeDragEnd((node) => {
+    node.fx = node.x; node.fy = node.y; node.fz = node.z;
+  });
+
+// =====================================================================
+// PRESET LAYOUTS: force (mặc định), vòng tròn, hình cầu, lưới lập phương
+// Cách làm: gán fx/fy/fz để "khóa" vị trí node theo công thức hình học,
+// rồi reheat simulation. Chọn lại "Force" sẽ gỡ khóa (fx/fy/fz = undefined).
+// =====================================================================
+
+function applyLayout(type) {
+  const N = gData.nodes.length;
+
+  if (type === "force") {
+    gData.nodes.forEach((n) => { n.fx = undefined; n.fy = undefined; n.fz = undefined; });
+  }
+
+  if (type === "circle") {
+    const radius = 40 + N * 6;
+    gData.nodes.forEach((n, i) => {
+      const angle = (i / N) * 2 * Math.PI;
+      n.fx = radius * Math.cos(angle);
+      n.fy = 0;
+      n.fz = radius * Math.sin(angle);
+    });
+  }
+
+  if (type === "sphere") {
+    // Fibonacci sphere — phân bố đều các điểm trên mặt cầu
+    const radius = 30 + N * 5;
+    const offset = 2 / N;
+    const increment = Math.PI * (3 - Math.sqrt(5)); // golden angle
+    gData.nodes.forEach((n, i) => {
+      const y = i * offset - 1 + offset / 2;
+      const r = Math.sqrt(Math.max(0, 1 - y * y));
+      const phi = i * increment;
+      n.fx = Math.cos(phi) * r * radius;
+      n.fy = y * radius;
+      n.fz = Math.sin(phi) * r * radius;
+    });
+  }
+
+  if (type === "cube") {
+    const side = Math.ceil(Math.cbrt(N));
+    const spacing = 45;
+    const offset = ((side - 1) * spacing) / 2;
+    gData.nodes.forEach((n, i) => {
+      const xi = i % side;
+      const yi = Math.floor(i / side) % side;
+      const zi = Math.floor(i / (side * side));
+      n.fx = xi * spacing - offset;
+      n.fy = yi * spacing - offset;
+      n.fz = zi * spacing - offset;
+    });
+  }
+
+  Graph.graphData(gData);
+  Graph.d3ReheatSimulation();
+}
+
+document.getElementById("layout-bar").addEventListener("click", (evt) => {
+  const btn = evt.target.closest("button[data-layout]");
+  if (!btn) return;
+  document.querySelectorAll("#layout-bar button").forEach((b) => b.classList.remove("active"));
+  btn.classList.add("active");
+  applyLayout(btn.dataset.layout);
+});
+</script>
+</body>
+</html>

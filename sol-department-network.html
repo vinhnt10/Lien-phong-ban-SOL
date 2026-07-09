@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>SOL — Sơ đồ liên kết phòng ban</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#0f1115; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  #root { width:100%; height:100vh; }
+  .react-flow__node { border-radius:10px; font-size:13px; font-weight:600; text-align:center; padding:8px 10px; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+  .node-core { background:#2563eb; color:#fff; border:2px solid #93c5fd; }
+  .node-ext { background:#1f2430; color:#cbd5e1; border:1px solid #3a4152; }
+  .panel {
+    position:absolute; top:16px; right:16px; width:340px; max-height:80vh; overflow:auto;
+    background:#161a22; color:#e5e7eb; border:1px solid #2a3040; border-radius:12px; padding:16px;
+    box-shadow:0 8px 24px rgba(0,0,0,.5); font-size:14px; z-index:10;
+  }
+  .panel h3 { margin:0 0 8px 0; font-size:15px; color:#93c5fd; }
+  .panel ul { margin:8px 0 0 0; padding-left:18px; }
+  .panel li { margin-bottom:6px; line-height:1.4; }
+  .panel .freq { color:#9ca3af; font-size:12px; margin-top:10px; }
+  .hint {
+    position:absolute; top:16px; left:16px; background:#161a22; color:#9ca3af; border:1px solid #2a3040;
+    border-radius:10px; padding:10px 14px; font-size:13px; max-width:320px; z-index:10;
+  }
+  .legend-core { color:#93c5fd; font-weight:600; }
+  .legend-ext { color:#cbd5e1; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Dữ liệu dùng chung với bản 3D — sửa nội dung ở data.js, không sửa trong module bên dưới -->
+<script src="./data.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "reactflow": "https://esm.sh/reactflow@11.11.4?deps=react@18.3.1,react-dom@18.3.1"
+  }
+}
+</script>
+
+<script type="module">
+import React, { useState, useCallback, useMemo } from "react";
+import { createRoot } from "react-dom/client";
+import ReactFlow, {
+  Background, Controls, MiniMap, MarkerType, useNodesState, useEdgesState
+} from "reactflow";
+// ---- Load reactflow's CSS manually (browsers don't reliably support CSS import assertions) ----
+const cssLink = document.createElement("link");
+cssLink.rel = "stylesheet";
+cssLink.href = "https://esm.sh/reactflow@11.11.4/dist/style.css";
+document.head.appendChild(cssLink);
+
+const h = React.createElement;
+
+// ---- Dữ liệu nạp từ data.js (window.SOL_NETWORK_DATA) — sửa nội dung ở đó, không sửa ở đây ----
+const { CORE_IDS, nodeMeta, edgeDefs } = window.SOL_NETWORK_DATA;
+const CORE = new Set(CORE_IDS);
+
+// ---- restore any previously dragged positions ----
+const STORAGE_KEY = "sol-dept-network-positions-v1";
+let savedPositions = {};
+try {
+  savedPositions = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+} catch (e) { savedPositions = {}; }
+
+// ---- build nodes ----
+const nodes = Object.entries(nodeMeta).map(([id, meta]) => ({
+  id,
+  position: savedPositions[id] || { x: meta.x, y: meta.y },
+  data: { label: meta.label },
+  style: CORE.has(id)
+    ? { background: "#2563eb", color: "#fff", border: "2px solid #93c5fd", width: 150, whiteSpace: "pre-line" }
+    : { background: "#1f2430", color: "#cbd5e1", border: "1px solid #3a4152", width: 150, whiteSpace: "pre-line" },
+}));
+
+// ---- build edges ----
+const edges = edgeDefs.map((e, i) => ({
+  id: `e-${e.a}-${e.b}-${i}`,
+  source: e.a,
+  target: e.b,
+  data: { processes: e.processes, freq: e.freq, a: e.a, b: e.b },
+  style: { stroke: "#64748b", strokeWidth: Math.min(1 + e.processes.length, 5) },
+  markerEnd: { type: MarkerType.ArrowClosed, color: "#64748b" },
+}));
+
+function App() {
+  const [nds, setNodes, onNodesChange] = useNodesState(nodes);
+  const [eds, setEdges] = useEdgesState(edges);
+  const [selected, setSelected] = useState(null);
+
+  const persistPositions = useCallback((currentNodes) => {
+    const positions = {};
+    currentNodes.forEach((n) => { positions[n.id] = n.position; });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(positions)); } catch (e) {}
+  }, []);
+
+  const onNodeDragStop = useCallback((evt, node) => {
+    setNodes((current) => {
+      persistPositions(current);
+      return current;
+    });
+  }, [setNodes, persistPositions]);
+
+  const resetLayout = useCallback(() => {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    window.location.reload();
+  }, []);
+
+  const onEdgeClick = useCallback((evt, edge) => {
+    setSelected(edge.data);
+    setEdges((es) => es.map((e) => ({
+      ...e,
+      style: { ...e.style, stroke: e.id === edge.id ? "#f59e0b" : "#64748b" },
+    })));
+  }, [setEdges]);
+
+  const onPaneClick = useCallback(() => {
+    setSelected(null);
+    setEdges((es) => es.map((e) => ({ ...e, style: { ...e.style, stroke: "#64748b" } })));
+  }, [setEdges]);
+
+  return h("div", { style: { width: "100%", height: "100%", position: "relative" } },
+    h(ReactFlow, {
+      nodes: nds,
+      edges: eds,
+      onNodesChange,
+      onNodeDragStop,
+      onEdgeClick,
+      onPaneClick,
+      fitView: true,
+      minZoom: 0.2,
+      maxZoom: 2,
+    },
+      h(Background, { color: "#242938", gap: 24 }),
+      h(Controls, null),
+      h(MiniMap, { style: { background: "#161a22" }, maskColor: "rgba(0,0,0,0.6)" }),
+    ),
+    h("div", { className: "hint" },
+      h("div", null, h("span", { className: "legend-core" }, "■ Xanh"), " = phòng đã khảo sát (CK, Đào tạo, Kế toán, QA/QC, Thu mua)"),
+      h("div", { style: { marginTop: 4 } }, h("span", { className: "legend-ext" }, "■ Xám"), " = phòng ban liên quan (chưa có file khảo sát riêng)"),
+      h("div", { style: { marginTop: 8 } }, "👉 Bấm vào 1 đường line để xem các nghiệp vụ liên phòng ban."),
+      h("div", { style: { marginTop: 8 } }, "🖱️ Kéo-thả node để sắp xếp lại — vị trí sẽ tự lưu."),
+      h("button", {
+        onClick: resetLayout,
+        style: { marginTop: 10, background: "#2a3040", color: "#e5e7eb", border: "1px solid #3a4152", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12 }
+      }, "↺ Reset layout")
+    ),
+    selected && h("div", { className: "panel" },
+      h("h3", null, `${nodeMeta[selected.a]?.label.replace("\n"," ")}  ↔  ${nodeMeta[selected.b]?.label.replace("\n"," ")}`),
+      h("ul", null, selected.processes.map((p, i) => h("li", { key: i }, p))),
+      h("div", { className: "freq" }, `Tần suất: ${selected.freq}`)
+    )
+  );
+}
+
+createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>
