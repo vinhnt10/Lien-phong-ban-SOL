@@ -15,10 +15,19 @@
   .panel ul { margin:8px 0 0 0; padding-left:18px; }
   .panel li { margin-bottom:6px; line-height:1.4; }
   .panel .freq { color:#9ca3af; font-size:12px; margin-top:10px; }
-  .hint {
-    position:absolute; top:16px; left:16px; background:#161a22; color:#9ca3af; border:1px solid #2a3040;
-    border-radius:10px; padding:10px 14px; font-size:13px; max-width:320px; z-index:10; line-height:1.5;
+  .hint-btn {
+    position:absolute; top:16px; left:16px; z-index:11; width:36px; height:36px; border-radius:50%;
+    background:#161a22; border:1px solid #2a3040; color:#93c5fd; font-size:17px; font-weight:700;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+    box-shadow:0 4px 14px rgba(0,0,0,.4);
   }
+  .hint-btn:hover { background:#2a3040; }
+  .hint {
+    position:absolute; top:60px; left:16px; background:#161a22; color:#9ca3af; border:1px solid #2a3040;
+    border-radius:10px; padding:10px 14px; font-size:13px; max-width:320px; z-index:10; line-height:1.5;
+    display:none;
+  }
+  .hint.visible { display:block; }
   .legend-core { color:#93c5fd; font-weight:600; }
   .legend-ext { color:#cbd5e1; }
   .layout-bar {
@@ -31,15 +40,116 @@
     padding:6px 12px; font-size:12px; cursor:pointer;
   }
   .layout-bar button.active { background:#2563eb; color:#fff; border-color:#93c5fd; }
+  .refresh-btn {
+    position:absolute; top:16px; right:16px; z-index:11;
+    background:#1f2430; color:#cbd5e1; border:1px solid #3a4152; border-radius:8px;
+    padding:8px 14px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;
+  }
+  .refresh-btn:hover { background:#2a3040; }
+  .refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .toast {
+    position:absolute; top:112px; right:16px; z-index:11; background:#161a22; color:#e5e7eb;
+    border:1px solid #2a3040; border-radius:8px; padding:8px 14px; font-size:13px;
+    opacity:0; transform:translateY(-6px); transition:opacity .2s, transform .2s; pointer-events:none;
+  }
+  .toast.show { opacity:1; transform:translateY(0); }
+  .back-btn {
+    position:absolute; top:64px; right:16px; z-index:11;
+    background:#2563eb; color:#fff; border:1px solid #93c5fd; border-radius:8px;
+    padding:8px 14px; font-size:13px; cursor:pointer; display:none; align-items:center; gap:6px;
+  }
+  .back-btn.visible { display:flex; }
+  .back-btn:hover { background:#1d4ed8; }
+  .crumb-header {
+    position:absolute; top:16px; left:50%; transform:translateX(-50%);
+    background:#161a22; color:#e5e7eb; border:1px solid #2a3040; border-radius:10px;
+    padding:8px 22px; font-size:14px; font-weight:600; z-index:10; display:none;
+    white-space:nowrap; max-width:60vw; overflow:hidden; text-overflow:ellipsis;
+    text-align:center; box-shadow:0 4px 14px rgba(0,0,0,.4);
+  }
+  .crumb-header.visible { display:block; }
+  .crumb-header .crumb-dept { color:#93c5fd; }
+  .crumb-header .crumb-sep { color:#6b7280; margin:0 6px; }
+  .crumb-header .crumb-nv1 { color:#86efac; }
+  .fatal-error {
+    display:none; position:fixed; top:0; left:0; right:0; z-index:9999;
+    background:#7f1d1d; color:#fecaca; padding:14px 20px; font-family:monospace;
+    font-size:13px; white-space:pre-wrap; word-break:break-word; box-shadow:0 4px 14px rgba(0,0,0,.5);
+  }
+  .level3-view {
+    display:none; position:absolute; inset:0; z-index:15; background:rgba(10,12,16,0.97);
+    padding:76px 24px 24px 24px; box-sizing:border-box;
+  }
+  .level3-view.visible { display:block; }
+  .level3-grid {
+    display:grid; grid-template-columns:260px 1fr 1fr; gap:18px; height:100%; max-width:1400px; margin:0 auto;
+  }
+  .level3-col {
+    background:#161a22; border:1px solid #2a3040; border-radius:12px; padding:18px;
+    overflow:auto; color:#e5e7eb;
+  }
+  .level3-col h4 {
+    margin:0 0 12px 0; font-size:13px; color:#93c5fd; text-transform:uppercase; letter-spacing:.03em;
+  }
+  .level3-col-node {
+    display:flex; align-items:flex-start; justify-content:flex-start;
+  }
+  .level3-node-box {
+    background:rgba(37,99,235,0.18); border:1.5px solid #2563eb; border-radius:10px;
+    padding:14px 16px; font-size:15px; font-weight:600; color:#dbeafe; line-height:1.4; width:100%;
+  }
+  .level3-col ol, .level3-col ul { margin:0; padding-left:20px; }
+  .level3-col li { margin-bottom:10px; line-height:1.5; font-size:13.5px; }
+  .level3-subheading { font-size:12px; color:#86efac; font-weight:600; margin:16px 0 8px 0; text-transform:uppercase; letter-spacing:.03em; }
+  .level3-subheading:first-child { margin-top:0; }
+  .level3-empty { color:#6b7280; font-size:13px; font-style:italic; }
+  .level3-note { color:#fbbf24; font-size:13px; line-height:1.5; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.3); border-radius:8px; padding:10px 12px; }
+  .level3-close-btn {
+    position:absolute; top:16px; right:16px; z-index:16;
+    background:#2563eb; color:#fff; border:1px solid #93c5fd; border-radius:8px;
+    padding:8px 14px; font-size:13px; cursor:pointer;
+  }
+  .level3-close-btn:hover { background:#1d4ed8; }
 </style>
 </head>
 <body>
+<div id="fatal-error" class="fatal-error"></div>
+<script>
+  // Bắt lỗi JS ngay từ đầu (trước khi load các thư viện CDN) để nếu trang bị
+  // trắng/đen do lỗi script, người dùng thấy ngay dòng lỗi thay vì màn hình trống.
+  window.addEventListener("error", function (e) {
+    var el = document.getElementById("fatal-error");
+    var stack = (e.error && e.error.stack) ? "\n" + e.error.stack : "";
+    var msg = "⚠️ Lỗi JS: " + (e.message || "(không rõ)") +
+      (e.filename ? "\n@ " + e.filename + ":" + e.lineno + ":" + e.colno : "") + stack;
+    el.textContent = msg;
+    el.style.display = "block";
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    var el = document.getElementById("fatal-error");
+    el.textContent = "⚠️ Promise lỗi: " + (e.reason && e.reason.message ? e.reason.message : e.reason);
+    el.style.display = "block";
+  });
+</script>
 <div id="graph"></div>
-<div class="hint">
+<button class="refresh-btn" id="refresh-btn" title="Tải lại data.js mới nhất, không cần reload trang">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+  Refresh
+</button>
+<div class="toast" id="toast"></div>
+<button class="back-btn" id="back-btn" title="Quay lại toàn cảnh các phòng ban">← Quay lại</button>
+<div class="crumb-header" id="crumb-header"></div>
+<button class="hint-btn" id="hint-btn" title="Xem hướng dẫn thao tác">?</button>
+<div class="hint" id="hint">
   <div><span class="legend-core">● Xanh</span> = phòng đã khảo sát (CK, Đào tạo, Kế toán, QA/QC, Thu mua)</div>
   <div style="margin-top:4px"><span class="legend-ext">● Xám</span> = phòng ban liên quan (chưa có file riêng)</div>
   <div style="margin-top:8px">🖱️ Kéo chuột để xoay góc nhìn 3D · Cuộn để zoom · Kéo node để di chuyển</div>
+  <div style="margin-top:6px">👉 Bấm 1 lần vào phòng ban (xanh) để zoom Level 1 — xem nghiệp vụ nội bộ</div>
+  <div style="margin-top:6px">👉 Bấm tiếp vào 1 nghiệp vụ Level 1 (xanh lá) để zoom Level 2 — xem quy trình con</div>
+  <div style="margin-top:6px">👉 Bấm tiếp vào 1 quy trình con Level 2 để xem chi tiết Level 3 (3 cột)</div>
   <div style="margin-top:6px">👉 Bấm vào 1 đường link để xem nghiệp vụ liên kết</div>
+  <div style="margin-top:6px">↩️ Double-click vào node trung tâm đang zoom (hoặc bấm ← Quay lại) để lùi 1 cấp</div>
 </div>
 <div id="panel" class="panel">
   <h3 id="panel-title"></h3>
@@ -47,20 +157,41 @@
   <div class="freq" id="panel-freq"></div>
 </div>
 <div class="layout-bar" id="layout-bar">
-  <button data-layout="force" class="active">Force (mặc định)</button>
-  <button data-layout="circle">Vòng tròn</button>
+  <button data-layout="force">Force</button>
+  <button data-layout="circle" class="active">Vòng tròn (mặc định)</button>
   <button data-layout="sphere">Hình cầu</button>
   <button data-layout="cube">Lưới lập phương</button>
 </div>
 
-<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-<script src="https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
-<script src="https://unpkg.com/three-spritetext@1.8.2/dist/three-spritetext.min.js"></script>
+<div class="level3-view" id="level3-view">
+  <button class="level3-close-btn" id="level3-close-btn">← Quay lại quy trình con</button>
+  <div class="level3-grid">
+    <div class="level3-col level3-col-node">
+      <div class="level3-node-box" id="level3-node-name"></div>
+    </div>
+    <div class="level3-col">
+      <h4>3. Các bước thực hiện</h4>
+      <div id="level3-steps"></div>
+    </div>
+    <div class="level3-col">
+      <div class="level3-subheading">Khi có sự cố / ngoại lệ</div>
+      <div id="level3-exceptions"></div>
+      <div class="level3-subheading">Biểu mẫu / tài liệu</div>
+      <div id="level3-forms"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/three-spritetext@1.8.2/dist/three-spritetext.min.js" crossorigin="anonymous"></script>
 <script src="./data.js"></script>
 <script>
 // ---- Dữ liệu nạp từ data.js (window.SOL_NETWORK_DATA) — muốn cập nhật nội dung thì sửa file data.js, không sửa ở đây ----
-const { CORE_IDS, nodeMeta, edgeDefs, internalNV } = window.SOL_NETWORK_DATA;
-const CORE = new Set(CORE_IDS);
+// Dùng "let" (thay vì "const") vì nút Refresh sẽ nạp lại data.js và gán đè các biến này.
+let { CORE_IDS, nodeMeta, edgeDefs, internalNV, level2NV, level3Detail } = window.SOL_NETWORK_DATA;
+let CORE = new Set(CORE_IDS);
+let nvCount = {};
 
 // ---- Đếm SL nghiệp vụ mỗi node: nội bộ (nếu có) + liên phòng ban (từ các cạnh nối tới node) ----
 function countLinkedProcesses(id) {
@@ -69,22 +200,190 @@ function countLinkedProcesses(id) {
     .reduce((sum, e) => sum + e.processes.length, 0);
 }
 
-const nvCount = {};
-Object.keys(nodeMeta).forEach((id) => {
-  const internalCount = (internalNV[id] || []).length;
-  const linkedCount = countLinkedProcesses(id);
-  nvCount[id] = { internalCount, linkedCount, total: internalCount + linkedCount };
-});
+function computeNvCount() {
+  nvCount = {};
+  Object.keys(nodeMeta).forEach((id) => {
+    const internalCount = (internalNV[id] || []).length;
+    const linkedCount = countLinkedProcesses(id);
+    nvCount[id] = { internalCount, linkedCount, total: internalCount + linkedCount };
+  });
+}
+computeNvCount();
 
-const gData = {
-  nodes: Object.entries(nodeMeta).map(([id, meta]) => ({
-    id, name: meta.label, core: CORE.has(id), nv: nvCount[id],
-  })),
-  links: edgeDefs.map((e) => ({
-    source: e.a, target: e.b, processes: e.processes, freq: e.freq,
-    weight: e.processes.length,
-  })),
-};
+function buildGData() {
+  return {
+    nodes: Object.entries(nodeMeta).map(([id, meta]) => ({
+      id, name: meta.label, core: CORE.has(id), nv: nvCount[id],
+    })),
+    links: edgeDefs.map((e) => ({
+      source: e.a, target: e.b, processes: e.processes, freq: e.freq,
+      weight: e.processes.length,
+    })),
+  };
+}
+let gData = buildGData();
+
+// =====================================================================
+// DRILL-DOWN 3 CẤP:
+//  root  → bấm 1 phòng ban → level1 (nghiệp vụ nội bộ Level 1 tỏa quanh phòng ban)
+//  level1 → bấm 1 nghiệp vụ Level 1 → level2 (các quy trình con Level 2 tỏa quanh nghiệp vụ đó)
+// Double-click vào node trung tâm đang zoom → lùi lại đúng 1 cấp
+// (level2 → level1 → root). Giao diện/kiểu node-center (xanh, to) và
+// node-leaf (xanh lá, nhỏ) dùng chung cho cả level1 và level2.
+// =====================================================================
+
+let viewMode = "root"; // "root" | "level1" | "level2"
+let currentDeptId = null;      // phòng ban đang zoom (level1 hoặc level2)
+let currentNV1Index = null;    // index nghiệp vụ Level 1 đang zoom (chỉ dùng ở level2)
+
+function buildLevel1GData(deptId) {
+  const processes = internalNV[deptId] || [];
+  const centerMeta = nodeMeta[deptId];
+  const nodes = [
+    { id: deptId, name: centerMeta.label, core: true, nv: nvCount[deptId], isCenter: true },
+    ...processes.map((text, i) => ({
+      id: `${deptId}::NV${i}`,
+      name: text,
+      isProcess: true,
+      parentDept: deptId,
+      nv1Index: i,
+    })),
+  ];
+  const links = processes.map((text, i) => ({
+    source: deptId,
+    target: `${deptId}::NV${i}`,
+    isInternalLink: true,
+  }));
+  return { nodes, links };
+}
+
+function buildLevel2GData(deptId, nv1Index) {
+  const nv1Text = (internalNV[deptId] || [])[nv1Index] || "";
+  const subs = (level2NV[deptId] || [])[nv1Index] || [];
+  const nodes = [
+    { id: `${deptId}::NV${nv1Index}`, name: nv1Text, core: true, isCenter: true, isNV1Center: true, parentDept: deptId, nv1Index },
+    ...subs.map((text, j) => ({
+      id: `${deptId}::NV${nv1Index}::S${j}`,
+      name: text,
+      isProcess: true,
+      parentDept: deptId,
+      parentNV1Index: nv1Index,
+      parentNV1Text: nv1Text,
+      subIndex: j,
+    })),
+  ];
+  const links = subs.map((text, j) => ({
+    source: `${deptId}::NV${nv1Index}`,
+    target: `${deptId}::NV${nv1Index}::S${j}`,
+    isInternalLink: true,
+  }));
+  return { nodes, links };
+}
+
+const layoutBarEl = document.getElementById("layout-bar");
+const backBtnEl = document.getElementById("back-btn");
+const crumbHeaderEl = document.getElementById("crumb-header");
+
+// Header sát cạnh trên, canh giữa trang: hiện tên phòng ban (Level 1) hoặc
+// "Phòng ban / Nghiệp vụ" (Level 2). Ẩn khi đang ở toàn cảnh (root).
+function updateCrumbHeader() {
+  if (viewMode === "root") {
+    crumbHeaderEl.classList.remove("visible");
+    crumbHeaderEl.innerHTML = "";
+    return;
+  }
+  const deptLabel = (nodeMeta[currentDeptId]?.label || currentDeptId).replace(/\n/g, " ");
+  if (viewMode === "level1") {
+    crumbHeaderEl.innerHTML = `<span class="crumb-dept">${deptLabel}</span>`;
+  } else if (viewMode === "level2") {
+    const nv1Text = (internalNV[currentDeptId] || [])[currentNV1Index] || "";
+    crumbHeaderEl.innerHTML = `<span class="crumb-dept">${deptLabel}</span><span class="crumb-sep">/</span><span class="crumb-nv1">${nv1Text}</span>`;
+  }
+  crumbHeaderEl.classList.add("visible");
+}
+
+// Quy tắc chung: mỗi khi vào 1 view (root/level1/level2) đều mặc định canh
+// theo dạng vòng tròn, và giao diện vừa khít trong màn hình (zoomToFit).
+function setActiveLayoutButton(type) {
+  document.querySelectorAll("#layout-bar button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.layout === type);
+  });
+}
+
+function showRoot() {
+  viewMode = "root";
+  currentDeptId = null;
+  currentNV1Index = null;
+  gData = buildGData();
+  applyLayout("circle"); // applyLayout tự gọi Graph.graphData(gData) — không gọi lặp lại ở đây
+  setActiveLayoutButton("circle");
+  backBtnEl.classList.remove("visible");
+  updateCrumbHeader();
+  panel.style.display = "none";
+  hideLevel3();
+}
+
+function showLevel1(deptId) {
+  if (!internalNV[deptId] || !internalNV[deptId].length) {
+    return; // phòng này chưa có dữ liệu nghiệp vụ nội bộ — không có gì để zoom vào
+  }
+  viewMode = "level1";
+  currentDeptId = deptId;
+  currentNV1Index = null;
+  gData = buildLevel1GData(deptId);
+  applyLayout("circle"); // applyLayout tự gọi Graph.graphData(gData) — không gọi lặp lại ở đây
+  setActiveLayoutButton("circle");
+  backBtnEl.classList.add("visible");
+  updateCrumbHeader();
+  panel.style.display = "none";
+  hideLevel3();
+}
+
+function showLevel2(deptId, nv1Index) {
+  const subs = (level2NV[deptId] || [])[nv1Index];
+  if (!subs || !subs.length) {
+    return; // nghiệp vụ này chưa có dữ liệu quy trình con — không có gì để zoom vào
+  }
+  viewMode = "level2";
+  currentDeptId = deptId;
+  currentNV1Index = nv1Index;
+  gData = buildLevel2GData(deptId, nv1Index);
+  applyLayout("circle"); // applyLayout tự gọi Graph.graphData(gData) — không gọi lặp lại ở đây
+  setActiveLayoutButton("circle");
+  backBtnEl.classList.add("visible");
+  updateCrumbHeader();
+  panel.style.display = "none";
+  hideLevel3();
+}
+
+function goBack() {
+  if (level3ViewEl.classList.contains("visible")) {
+    // Đang mở chi tiết Level 3 → đóng lại trước, chưa lùi cấp
+    hideLevel3();
+    return;
+  }
+  if (viewMode === "level2") {
+    showLevel1(currentDeptId);
+  } else if (viewMode === "level1") {
+    showRoot();
+  }
+}
+
+backBtnEl.addEventListener("click", goBack);
+
+// Nút hướng dẫn (?) ở góc trên trái: bấm để bật/tắt tooltip hướng dẫn,
+// bấm ra ngoài (bất kỳ đâu khác) sẽ tự tắt tooltip.
+const hintBtnEl = document.getElementById("hint-btn");
+const hintEl = document.getElementById("hint");
+hintBtnEl.addEventListener("click", (evt) => {
+  evt.stopPropagation();
+  hintEl.classList.toggle("visible");
+});
+document.addEventListener("click", (evt) => {
+  if (hintEl.classList.contains("visible") && evt.target !== hintBtnEl && !hintEl.contains(evt.target)) {
+    hintEl.classList.remove("visible");
+  }
+});
 
 const panel = document.getElementById("panel");
 const panelTitle = document.getElementById("panel-title");
@@ -143,30 +442,101 @@ function showNodePanel(node) {
   panel.style.display = "block";
 }
 
+function showProcessPanel(node) {
+  const deptLabel = nodeMeta[node.parentDept]?.label.replace("\n", " ") || node.parentDept;
+  panelTitle.textContent = node.name;
+  if (node.parentNV1Text) {
+    // Leaf ở Level 2 — hiện rõ đường dẫn phòng ban → nghiệp vụ Level 1 cha
+    panelList.innerHTML = `<li style="list-style:none;margin-left:-18px;color:#9ca3af">Thuộc: ${deptLabel} → ${node.parentNV1Text}</li>`;
+  } else {
+    // Leaf ở Level 1
+    panelList.innerHTML = `<li style="list-style:none;margin-left:-18px;color:#9ca3af">Thuộc phòng: ${deptLabel}</li>`;
+  }
+  panelFreq.textContent = "";
+  panel.style.display = "block";
+}
+
+// =====================================================================
+// ZOOM LEVEL 3: bấm 1 quy trình con (leaf ở Level 2) → hiện overlay 3 cột
+// với chi tiết PHẦN 3 — QUY TRÌNH CHI TIẾT của quy trình đó (nếu có).
+// Cột 1 (trái): tên quy trình con. Cột 2 (giữa): "3. Các bước thực hiện".
+// Cột 3 (phải): "Khi có sự cố / ngoại lệ" + "Biểu mẫu / tài liệu".
+// =====================================================================
+
+const level3ViewEl = document.getElementById("level3-view");
+const level3NodeNameEl = document.getElementById("level3-node-name");
+const level3StepsEl = document.getElementById("level3-steps");
+const level3ExceptionsEl = document.getElementById("level3-exceptions");
+const level3FormsEl = document.getElementById("level3-forms");
+const level3CloseBtnEl = document.getElementById("level3-close-btn");
+
+function resolveLevel3Detail(deptId, nv1Index, subIndex) {
+  const key = `${deptId}|${nv1Index}|${subIndex}`;
+  let detail = (level3Detail || {})[key];
+  if (detail && detail.ref) detail = (level3Detail || {})[detail.ref];
+  return detail || null;
+}
+
+function showLevel3(node) {
+  const detail = resolveLevel3Detail(node.parentDept, node.parentNV1Index, node.subIndex);
+
+  level3NodeNameEl.textContent = node.name;
+
+  const steps = (detail && detail.steps) || [];
+  level3StepsEl.innerHTML = steps.length
+    ? `<ol>${steps.map((s) => `<li>${s}</li>`).join("")}</ol>`
+    : `<div class="level3-empty">Chưa có dữ liệu — cần workshop bổ sung.</div>`;
+
+  const exceptions = (detail && detail.exceptions) || [];
+  level3ExceptionsEl.innerHTML = exceptions.length
+    ? `<ul>${exceptions.map((s) => `<li>${s}</li>`).join("")}</ul>`
+    : `<div class="level3-empty">Chưa có dữ liệu.</div>`;
+
+  const forms = (detail && detail.forms) || [];
+  level3FormsEl.innerHTML = forms.length
+    ? `<ul>${forms.map((s) => `<li>${s}</li>`).join("")}</ul>`
+    : `<div class="level3-empty">Chưa có dữ liệu.</div>`;
+
+  if (detail && detail.note) {
+    level3ExceptionsEl.innerHTML = `<div class="level3-note">${detail.note}</div>` + level3ExceptionsEl.innerHTML;
+  }
+
+  level3ViewEl.classList.add("visible");
+}
+
+function hideLevel3() {
+  level3ViewEl.classList.remove("visible");
+}
+
+level3CloseBtnEl.addEventListener("click", hideLevel3);
+
+let lastNodeClick = { id: null, t: 0 };
+const DBLCLICK_MS = 400;
+
 const Graph = ForceGraph3D()(document.getElementById("graph"))
   .graphData(gData)
   .backgroundColor("#0a0c10")
   .nodeLabel((n) => n.name)
-  .nodeColor((n) => (n.core ? "#2563eb" : "#4b5568"))
-  .nodeVal((n) => (n.core ? 10 : 5))
+  .nodeColor((n) => (n.isProcess ? "#22c55e" : n.core ? "#2563eb" : "#4b5568"))
+  .nodeVal((n) => (n.isProcess ? 3 : n.core ? 10 : 5))
   .nodeOpacity(0.95)
-  .linkWidth((l) => 0.6 + l.weight * 0.5)
-  .linkColor(() => "#64748b")
-  .linkOpacity(0.5)
-  .linkDirectionalArrowLength(4)
+  .linkWidth((l) => (l.isInternalLink ? 1.5 : 0.6 + l.weight * 0.5))
+  .linkColor((l) => (l.isInternalLink ? "#22c55e" : "#64748b"))
+  .linkOpacity((l) => (l.isInternalLink ? 0.4 : 0.5))
+  .linkDirectionalArrowLength((l) => (l.isInternalLink ? 3 : 4))
   .linkDirectionalArrowRelPos(1)
   .linkDirectionalParticles((l) => (l.__active ? 3 : 0))
   .linkDirectionalParticleWidth(2.5)
   .nodeThreeObject((n) => {
     try {
-      const label = `${n.name}\n(${n.nv ? n.nv.total : 0})`;
+      const label = n.isProcess ? n.name : `${n.name}\n(${n.nv ? n.nv.total : 0})`;
       const sprite = new SpriteText(label);
-      sprite.color = n.core ? "#dbeafe" : "#cbd5e1";
-      sprite.textHeight = n.core ? 5 : 3.6;
-      sprite.backgroundColor = n.core ? "rgba(37,99,235,0.85)" : "rgba(31,36,48,0.85)";
+      sprite.color = n.isProcess ? "#dcfce7" : n.core ? "#dbeafe" : "#cbd5e1";
+      sprite.textHeight = n.isProcess ? 3 : n.core ? 5 : 3.6;
+      sprite.backgroundColor = n.isProcess ? "rgba(22,101,52,0.85)" : n.core ? "rgba(37,99,235,0.85)" : "rgba(31,36,48,0.85)";
       sprite.padding = 2;
       sprite.borderRadius = 3;
-      sprite.position.set(0, n.core ? 12 : 8, 0);
+      sprite.position.set(0, n.isProcess ? 6 : n.core ? 12 : 8, 0);
       return sprite;
     } catch (err) {
       console.error("SpriteText lỗi, bỏ qua label cho node", n.id, err);
@@ -175,18 +545,63 @@ const Graph = ForceGraph3D()(document.getElementById("graph"))
   })
   .nodeThreeObjectExtend(true)
   .onLinkClick((link) => {
+    if (link.isInternalLink) return; // link nội bộ trong chế độ drilldown — không có panel riêng
     gData.links.forEach((l) => (l.__active = false));
     link.__active = true;
     Graph.linkDirectionalParticles((l) => (l.__active ? 3 : 0));
     showLinkPanel(link);
   })
   .onNodeClick((node) => {
+    const now = Date.now();
+    const isDoubleClick = node.id === lastNodeClick.id && (now - lastNodeClick.t) < DBLCLICK_MS;
+    lastNodeClick = { id: node.id, t: now };
+
+    if (isDoubleClick) {
+      if (node.isCenter) {
+        goBack();
+      }
+      return;
+    }
+
+    if (node.isProcess) {
+      if (viewMode === "level1") {
+        // Leaf ở Level 1 — nếu có dữ liệu quy trình con (2.2) thì zoom tiếp vào Level 2
+        const subs = (level2NV[node.parentDept] || [])[node.nv1Index];
+        if (subs && subs.length) {
+          showLevel2(node.parentDept, node.nv1Index);
+          return;
+        }
+        showProcessPanel(node);
+        return;
+      }
+      if (viewMode === "level2") {
+        // Leaf ở Level 2 (quy trình con) — mở overlay 3 cột chi tiết Level 3
+        showLevel3(node);
+        return;
+      }
+      showProcessPanel(node);
+      return;
+    }
+
+    if (viewMode === "root" && internalNV[node.id] && internalNV[node.id].length) {
+      showLevel1(node.id);
+      return;
+    }
+
+    if (node.isNV1Center) {
+      // Node trung tâm ở Level 2 (chính là 1 nghiệp vụ Level 1) — hiện panel riêng, không có nodeMeta
+      showProcessPanel(node);
+      return;
+    }
+
+    // Phòng ban chưa có dữ liệu nội bộ (node xám), hoặc node trung tâm khi đang zoom → hiện panel như cũ
     gData.links.forEach((l) => (l.__active = false));
     Graph.linkDirectionalParticles((l) => (l.__active ? 3 : 0));
     showNodePanel(node);
   })
   .onBackgroundClick(() => {
     panel.style.display = "none";
+    hintEl.classList.remove("visible");
     gData.links.forEach((l) => (l.__active = false));
     Graph.linkDirectionalParticles((l) => (l.__active ? 3 : 0));
   })
@@ -194,11 +609,24 @@ const Graph = ForceGraph3D()(document.getElementById("graph"))
     node.fx = node.x; node.fy = node.y; node.fz = node.z;
   });
 
+// Mặc định khi vào trang: canh theo dạng vòng tròn, vừa khít khung hình
+// (tránh tình trạng đồ thị hiện quá to / lệch tâm lúc mới tải trang).
+// Trì hoãn 1 nhịp (setTimeout 0) để graph engine xử lý xong graphData() ban
+// đầu trước khi ta gọi graphData() lần nữa trong applyLayout — gọi 2 lần liền
+// không có độ trễ từng gây "Script error." và graph trống trơn.
+setTimeout(() => {
+  applyLayout("circle");
+  setActiveLayoutButton("circle");
+  updateCrumbHeader();
+}, 0);
+
 // =====================================================================
 // PRESET LAYOUTS: force (mặc định), vòng tròn, hình cầu, lưới lập phương
 // Cách làm: gán fx/fy/fz để "khóa" vị trí node theo công thức hình học,
 // rồi reheat simulation. Chọn lại "Force" sẽ gỡ khóa (fx/fy/fz = undefined).
 // =====================================================================
+
+let applyLayoutSeq = 0;
 
 function applyLayout(type) {
   const N = gData.nodes.length;
@@ -246,17 +674,82 @@ function applyLayout(type) {
     });
   }
 
-  Graph.graphData(gData);
-  Graph.d3ReheatSimulation();
+  // Trì hoãn việc gọi graphData()/d3ReheatSimulation() sang animation frame kế
+  // tiếp thay vì gọi ngay lập tức. Gọi ngay khi engine nội bộ của thư viện
+  // đang xử lý dở dang (vd người dùng bấm chuyển view liên tục) từng gây lỗi
+  // "Cannot read properties of undefined (reading 'tick')" và graph trống trơn.
+  // Cờ "seq" đảm bảo nếu có 1 lượt applyLayout mới hơn gọi tới trong lúc đang
+  // chờ, lượt cũ sẽ tự hủy thay vì chồng lên nhau.
+  const seq = ++applyLayoutSeq;
+  requestAnimationFrame(() => {
+    if (seq !== applyLayoutSeq) return;
+    Graph.graphData(gData);
+    Graph.d3ReheatSimulation();
+    // Canh vừa khít khung hình sau khi đổi layout, tránh cảnh phóng quá to/lệch tâm
+    setTimeout(() => {
+      if (seq !== applyLayoutSeq) return;
+      Graph.zoomToFit(600, 70);
+    }, 60);
+  });
 }
 
 document.getElementById("layout-bar").addEventListener("click", (evt) => {
   const btn = evt.target.closest("button[data-layout]");
   if (!btn) return;
-  document.querySelectorAll("#layout-bar button").forEach((b) => b.classList.remove("active"));
-  btn.classList.add("active");
+  setActiveLayoutButton(btn.dataset.layout);
   applyLayout(btn.dataset.layout);
 });
+
+// =====================================================================
+// REFRESH: tải lại data.js mới nhất mà không cần load lại cả trang.
+// Cách làm: chèn 1 thẻ <script> mới trỏ tới data.js kèm query string
+// chống cache (?t=timestamp) — trình duyệt buộc phải tải file mới thay
+// vì dùng bản đã cache. Script này gán lại window.SOL_NETWORK_DATA,
+// sau đó ta đọc lại và build lại gData rồi gọi Graph.graphData(gData) —
+// 3d-force-graph sẽ giữ nguyên vị trí các node đã có, chỉ thêm/xóa/sửa
+// những gì thay đổi.
+// =====================================================================
+
+const toastEl = document.getElementById("toast");
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toastEl.classList.remove("show"), 2500);
+}
+
+const refreshBtn = document.getElementById("refresh-btn");
+function refreshData() {
+  refreshBtn.classList.add("spinning");
+  refreshBtn.disabled = true;
+
+  const script = document.createElement("script");
+  script.src = "./data.js?t=" + Date.now(); // cache-busting
+  script.onload = () => {
+    try {
+      ({ CORE_IDS, nodeMeta, edgeDefs, internalNV, level2NV, level3Detail } = window.SOL_NETWORK_DATA);
+      CORE = new Set(CORE_IDS);
+      computeNvCount();
+      showRoot(); // sau khi nạp dữ liệu mới, quay về toàn cảnh cho an toàn (tránh lệch node đang drilldown)
+      showToast("✅ Đã tải dữ liệu mới nhất");
+    } catch (err) {
+      console.error("Refresh lỗi:", err);
+      showToast("❌ Lỗi khi tải dữ liệu mới");
+    } finally {
+      refreshBtn.classList.remove("spinning");
+      refreshBtn.disabled = false;
+      document.body.removeChild(script);
+    }
+  };
+  script.onerror = () => {
+    showToast("❌ Không tải được data.js");
+    refreshBtn.classList.remove("spinning");
+    refreshBtn.disabled = false;
+  };
+  document.body.appendChild(script);
+}
+
+refreshBtn.addEventListener("click", refreshData);
 </script>
 </body>
 </html>
